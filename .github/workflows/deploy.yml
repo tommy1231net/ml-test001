@@ -29,9 +29,7 @@ jobs:
           service: 'ml-app'
           region: 'asia-northeast1'
           source: './'
-          flags: >
-            --allow-unauthenticated
-            --build-service-account=projects/528352551348/serviceAccounts/dpl-mltest001-mltest-482905-ia@mltest-482905.iam.gserviceaccount.com
+          flags: '--allow-unauthenticated'
 
       - name: Show Output
         run: echo "Deployed to ${{ steps.deploy.outputs.url }}"
