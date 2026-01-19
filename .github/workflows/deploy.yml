@@ -20,7 +20,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           # Workload Identityの設定
-          workload_identity_provider: 'projects/528352551348/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          workload_identity_provider: 'projects/528352551348/locations/global/workloadIdentityPools/github-pool/providers/pvd-mltest001'
           service_account: 'dpl-mltest001-mltest-482905-ia@mltest-482905.iam.gserviceaccount.com'
 
       - name: Deploy to Cloud Run
