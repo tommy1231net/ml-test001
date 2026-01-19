@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
-      id-token: 'write' # Workload Identityに必須
+      id-token: 'write'
 
     steps:
       - name: Checkout
@@ -19,7 +19,6 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          # Workload Identityの設定
           workload_identity_provider: 'projects/528352551348/locations/global/workloadIdentityPools/github-pool/providers/pvd-mltest001'
           service_account: 'dpl-mltest001-mltest-482905-ia@mltest-482905.iam.gserviceaccount.com'
 
@@ -29,8 +28,10 @@ jobs:
         with:
           service: 'ml-app'
           region: 'asia-northeast1'
-          source: './' # Dockerfileを含むカレントディレクトリ
-          flags: '--allow-unauthenticated'
+          source: './'
+          flags: >
+            --allow-unauthenticated
+            --build-service-account=projects/528352551348/serviceAccounts/dpl-mltest001-mltest-482905-ia@mltest-482905.iam.gserviceaccount.com
 
       - name: Show Output
         run: echo "Deployed to ${{ steps.deploy.outputs.url }}"
