@@ -22,13 +22,13 @@ jobs:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_SA_EMAIL }}
 
-      # 1. ビルドしてイメージを Artifact Registry にプッシュ（署名なしの状態）
+      # 1. ビルドしてイメージを Artifact Registry にプッシュ
       - name: Build and Push
         id: build
         run: |
           IMAGE="asia-northeast1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/cloud-run-source-deploy/ml-app:${{ github.sha }}"
           gcloud builds submit --tag $IMAGE .
-          # イメージの正確なダイジェスト（指紋）を取得
+          # イメージの正確なダイジェストを取得
           DIGEST=$(gcloud container images describe $IMAGE --format='get(image_summary.digest)')
           echo "IMAGE_DIGEST=$DIGEST" >> $GITHUB_OUTPUT
           echo "IMAGE_PATH=$IMAGE" >> $GITHUB_OUTPUT
@@ -36,15 +36,14 @@ jobs:
       # 2. バイナリ認証の署名（証言）を作成
       - name: Create Attestation
         run: |
+          # 署名に使用する鍵のフルパスを構築
+          KEY_PATH="projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1"
+          
           gcloud container binauthz attestations create \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             --attestor="build-attestor" \
             --attestor-project="${{ vars.GCP_PROJECT_ID }}" \
-            --keyversion-project="${{ vars.GCP_PROJECT_ID }}" \
-            --keyversion-location="asia-northeast1" \
-            --keyversion-keyring="binauthz-keyring" \
-            --keyversion-key="binauthz-signer" \
-            --keyversion="1"
+            --signing-key="$KEY_PATH"
 
       # 3. 署名済みのイメージをデプロイ
       - name: Deploy to Cloud Run
@@ -53,5 +52,6 @@ jobs:
         with:
           service: 'ml-app'
           region: 'asia-northeast1'
+          # ダイジェスト（@sha256:...）付きでデプロイするのがバイナリ認証の必須要件
           image: "${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}"
           flags: '--allow-unauthenticated'
