@@ -22,11 +22,8 @@ jobs:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_SA_EMAIL }}
 
-      # gcloudを最新にアップデートしてフラグの不一致を防ぐ
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          version: 'latest'
 
       - name: Build and Push
         id: build
@@ -39,12 +36,11 @@ jobs:
 
       - name: Create Attestation
         run: |
-          # 最新のgcloudで推奨される「フルパス」形式の引数を使用
           gcloud container binauthz attestations create \
-            --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
-            --attestor="build-attestor" \
-            --attestor-project="${{ vars.GCP_PROJECT_ID }}" \
-            --keyversion="projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1"
+            --artifact-url "${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
+            --attestor "build-attestor" \
+            --attestor-project "${{ vars.GCP_PROJECT_ID }}" \
+            --keyversion "projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1"
 
       - name: Deploy to Cloud Run
         id: deploy
