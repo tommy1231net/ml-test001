@@ -36,16 +36,12 @@ jobs:
 
       - name: Create Attestation
         run: |
-          # KMS 署名を明示的に行うための正しいフラグセット
-          gcloud container binauthz attestations create \
+          # gcloud beta を使用することで、KMS連携フラグを確実に有効化します
+          gcloud beta container binauthz attestations create \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             --attestor="build-attestor" \
             --attestor-project="${{ vars.GCP_PROJECT_ID }}" \
-            --keyversion-project="${{ vars.GCP_PROJECT_ID }}" \
-            --keyversion-location="asia-northeast1" \
-            --keyversion-keyring="binauthz-keyring" \
-            --keyversion-key="binauthz-signer" \
-            --keyversion="1"
+            --signing-key="projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1"
 
       - name: Deploy to Cloud Run
         id: deploy
