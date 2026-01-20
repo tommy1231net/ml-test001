@@ -25,23 +25,27 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      # betaコンポーネントを明示的にインストール
+      - name: Install Beta Components
+        run: gcloud components install beta --quiet
+
       - name: Build and Push
         id: build
         run: |
           IMAGE="asia-northeast1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/cloud-run-source-deploy/ml-app:${{ github.sha }}"
-          gcloud builds submit --tag $IMAGE .
+          gcloud builds submit --tag $IMAGE --quiet .
           DIGEST=$(gcloud container images describe $IMAGE --format='get(image_summary.digest)')
           echo "IMAGE_DIGEST=$DIGEST" >> $GITHUB_OUTPUT
           echo "IMAGE_PATH=$IMAGE" >> $GITHUB_OUTPUT
 
       - name: Create Attestation
         run: |
-          # gcloud beta を使用することで、KMS連携フラグを確実に有効化します
           gcloud beta container binauthz attestations create \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             --attestor="build-attestor" \
             --attestor-project="${{ vars.GCP_PROJECT_ID }}" \
-            --signing-key="projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1"
+            --signing-key="projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1" \
+            --quiet
 
       - name: Deploy to Cloud Run
         id: deploy
@@ -50,4 +54,4 @@ jobs:
           service: 'ml-app'
           region: 'asia-northeast1'
           image: "${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}"
-          flags: '--allow-unauthenticated'
+          flags: '--allow-unauthenticated --binary-authorization=default'
