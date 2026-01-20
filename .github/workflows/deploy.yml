@@ -37,10 +37,10 @@ jobs:
       - name: Create Attestation
         run: |
           gcloud container binauthz attestations create \
-            --artifact-url "${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
-            --attestor "build-attestor" \
-            --attestor-project "${{ vars.GCP_PROJECT_ID }}" \
-            --keyversion "projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1"
+            --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
+            --attestor="build-attestor" \
+            --attestor-project="${{ vars.GCP_PROJECT_ID }}" \
+            --public-key-id="projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1"
 
       - name: Deploy to Cloud Run
         id: deploy
