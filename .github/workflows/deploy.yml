@@ -36,12 +36,10 @@ jobs:
 
       - name: Create Attestation (Step-by-Step)
         run: |
-          # 1. 署名対象のペイロード（JSON）を作成
           gcloud container binauthz create-signature-payload \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             > payload.json
 
-          # 2. KMSを使ってペイロードに署名
           gcloud kms asymmetric-sign \
             --location="asia-northeast1" \
             --keyring="binauthz-keyring" \
@@ -51,13 +49,12 @@ jobs:
             --input-file=payload.json \
             --signature-file=signature.bin
 
-          # 3. 署名をバイナリ認証に登録
+          # --public-key-id を削除し、Attestorの設定から自動判別させます
           gcloud container binauthz attestations create \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             --attestor="build-attestor" \
             --attestor-project="${{ vars.GCP_PROJECT_ID }}" \
-            --signature-file=signature.bin \
-            --public-key-id="projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1"
+            --signature-file=signature.bin
 
       - name: Deploy to Cloud Run
         id: deploy
