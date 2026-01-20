@@ -33,14 +33,11 @@ jobs:
 
       - name: Create Attestation
         run: |
-          # 鍵のフルパスを明示的に作成
-          KEY_NAME="projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1"
-          
           gcloud container binauthz attestations create \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             --attestor="build-attestor" \
             --attestor-project="${{ vars.GCP_PROJECT_ID }}" \
-            --keyversion="$KEY_NAME"
+            --signing-key="projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1"
 
       - name: Deploy to Cloud Run
         id: deploy
