@@ -28,7 +28,8 @@ jobs:
       - name: Build and Push
         id: build
         run: |
-          IMAGE="asia-northeast1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/cloud-run-source-deploy/ml-app:${{ github.sha }}"
+          # リポジトリ名とイメージ名を penguin-api に変更
+          IMAGE="asia-northeast1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/penguin-api/penguin-api:${{ github.sha }}"
           gcloud builds submit --tag $IMAGE --quiet .
           DIGEST=$(gcloud container images describe $IMAGE --format='get(image_summary.digest)')
           echo "IMAGE_DIGEST=$DIGEST" >> $GITHUB_OUTPUT
@@ -36,17 +37,13 @@ jobs:
 
       - name: Create Attestation
         run: |
-          # 1. Attestorから「正解の公開鍵ID」を抽出して取得
           PKID=$(gcloud container binauthz attestors describe build-attestor \
             --format="value(userOwnedGrafeasNote.publicKeys[0].id)")
-          echo "Using Public Key ID: $PKID"
-
-          # 2. 署名対象のペイロードを作成
+          
           gcloud container binauthz create-signature-payload \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             > payload.json
 
-          # 3. KMSを使って署名
           gcloud kms asymmetric-sign \
             --location="asia-northeast1" \
             --keyring="binauthz-keyring" \
@@ -56,7 +53,6 @@ jobs:
             --input-file=payload.json \
             --signature-file=signature.bin
 
-          # 4. 抽出した「正解のID」を使って署名を登録
           gcloud container binauthz attestations create \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             --attestor="build-attestor" \
@@ -68,7 +64,7 @@ jobs:
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: 'ml-app'
+          service: 'penguin-api' # サービス名も penguin-api に変更
           region: 'asia-northeast1'
           image: "${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}"
           flags: '--allow-unauthenticated'
