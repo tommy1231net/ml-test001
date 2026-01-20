@@ -25,7 +25,6 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # betaコンポーネントを明示的にインストール
       - name: Install Beta Components
         run: gcloud components install beta --quiet
 
@@ -40,11 +39,16 @@ jobs:
 
       - name: Create Attestation
         run: |
+          # gcloud beta で 5分割フラグを使用する「最終構成」
           gcloud beta container binauthz attestations create \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             --attestor="build-attestor" \
             --attestor-project="${{ vars.GCP_PROJECT_ID }}" \
-            --signing-key="projects/${{ vars.GCP_PROJECT_ID }}/locations/asia-northeast1/keyRings/binauthz-keyring/cryptoKeys/binauthz-signer/cryptoKeyVersions/1" \
+            --keyversion-project="${{ vars.GCP_PROJECT_ID }}" \
+            --keyversion-location="asia-northeast1" \
+            --keyversion-keyring="binauthz-keyring" \
+            --keyversion-key="binauthz-signer" \
+            --keyversion="1" \
             --quiet
 
       - name: Deploy to Cloud Run
@@ -54,4 +58,4 @@ jobs:
           service: 'ml-app'
           region: 'asia-northeast1'
           image: "${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}"
-          flags: '--allow-unauthenticated --binary-authorization=default'
+          flags: '--allow-unauthenticated'
