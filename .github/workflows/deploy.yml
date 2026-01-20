@@ -34,12 +34,19 @@ jobs:
           echo "IMAGE_DIGEST=$DIGEST" >> $GITHUB_OUTPUT
           echo "IMAGE_PATH=$IMAGE" >> $GITHUB_OUTPUT
 
-      - name: Create Attestation (Step-by-Step)
+      - name: Create Attestation
         run: |
+          # 1. Attestorから「正解の公開鍵ID」を抽出して取得
+          PKID=$(gcloud container binauthz attestors describe build-attestor \
+            --format="value(userOwnedGrafeasNote.publicKeys[0].id)")
+          echo "Using Public Key ID: $PKID"
+
+          # 2. 署名対象のペイロードを作成
           gcloud container binauthz create-signature-payload \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             > payload.json
 
+          # 3. KMSを使って署名
           gcloud kms asymmetric-sign \
             --location="asia-northeast1" \
             --keyring="binauthz-keyring" \
@@ -49,12 +56,13 @@ jobs:
             --input-file=payload.json \
             --signature-file=signature.bin
 
-          # --public-key-id を削除し、Attestorの設定から自動判別させます
+          # 4. 抽出した「正解のID」を使って署名を登録
           gcloud container binauthz attestations create \
             --artifact-url="${{ steps.build.outputs.IMAGE_PATH }}@${{ steps.build.outputs.IMAGE_DIGEST }}" \
             --attestor="build-attestor" \
             --attestor-project="${{ vars.GCP_PROJECT_ID }}" \
-            --signature-file=signature.bin
+            --signature-file=signature.bin \
+            --public-key-id="$PKID"
 
       - name: Deploy to Cloud Run
         id: deploy
