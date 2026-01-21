@@ -1,0 +1,10 @@
+admissionWhitelistPatterns:
+- namePattern: gcr.io/google_containers/*
+- namePattern: k8s.gcr.io/*
+- namePattern: gke.gcr.io/*
+- namePattern: icr.io/managed-runtime/*
+defaultAdmissionRule:
+  enforcementMode: ENFORCED_BLOCK_AND_AUDIT_LOG
+  evaluationMode: REQUIRE_ATTESTATION
+  requireAttestationsBy:
+  - projects/mltest-482905/attestors/build-attestor
